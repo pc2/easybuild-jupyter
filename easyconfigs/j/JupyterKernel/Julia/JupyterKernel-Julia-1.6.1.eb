@@ -1,0 +1,48 @@
+easyblock = 'Bundle'
+
+name = 'JupyterKernel-Julia'
+version = '1.6.1'
+homepage = "https://github.com/JuliaLang/IJulia.jl"
+description = """
+Jupyter Kernel IJulia Version %(version)s
+"""
+toolchain = SYSTEM
+
+builddependencies = [
+    ('tools/binutils', '2.34'),
+]
+
+dependencies = [
+    ('lang/Julia/', "%(version)s-linux-x86_64"),
+]
+
+local_jupyter_path = 'share/jupyter'
+local_julia_depot_path = "%(installdir)s/share/julia/"
+
+# path to jupyter kernels
+modextrapaths = {
+    'JUPYTER_PATH': ['share/jupyter'],
+}
+modextravars = {
+    'JULIA_DEPOT_PATH': local_julia_depot_path,
+}
+modluafooter = """
+prepend_path("JUPYTER_PATH", pathJoin(os.getenv("HOME"), ".local/share/jupyter"))
+"""
+
+postinstallcmds = [
+    'JULIA_DEPOT_PATH=%s JUPYTER_DATA_DIR=%%(installdir)s/%s julia -e \'using Pkg; Pkg.add("IJulia"); Pkg.build("IJulia")\'' % (local_julia_depot_path, local_jupyter_path),
+    'for i in $(find %s); do chmod +r $i; done' % local_julia_depot_path,
+    'mkdir -p %s/config/' % local_julia_depot_path,
+    'cp $EBROOTEASYBUILD/easybuild/easyconfigs/j/JupyterKernel/Julia/startup.jl %s/config/startup.jl' % local_julia_depot_path,
+]
+sanity_check_paths = {
+    'files': [
+        'share/jupyter/kernels/julia-%(version_major_minor)s/kernel.json',
+        'share/julia/config/startup.jl',
+    ],
+    'dirs': [
+        'share/jupyter/kernels/julia-%(version_major_minor)s/',
+    ],
+}
+moduleclass = 'tools'
